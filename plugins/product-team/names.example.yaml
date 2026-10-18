@@ -1,0 +1,18 @@
+# Optional persona names for the product team.
+# Copy this file to .team/names.yaml in your project and edit it.
+# Keys must be role handles; each name must be unique. Leave a role out to keep its handle.
+# Names are display only: memory, lessons and handoff files always use the handle,
+# so renaming a role never loses its lessons.
+founder: Farah
+pm: Priya
+ba: Bharat
+ux: Uma
+ui: Ishaan
+tech-lead: Tara
+dev: Dev
+mobile: Mihir
+qa: Quinn
+devops: Omar
+security: Sana
+data: Ananya
+growth: Rohan
