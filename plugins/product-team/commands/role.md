@@ -36,6 +36,7 @@ After the role returns:
    - append the role's log line to `log.md`, its questions to `questions.md` and its bugs to `bugs.md`;
    - append its `Proposed lesson`, unless `none`, to `.team/lessons-pending.md` as `- [pending] <handle> | <scope> | <rule> | <task id or "adhoc">`;
    - set the board status: `review` when a build task is ready, `done` only when `tech-lead` approved and merged it, and `blocked` with the reason otherwise.
+   - when a task becomes `done`, clear its `Branch` cell; tech-lead has already deleted the task and QA branches (unless `keep_task_branches: true`). Remove any worktree you created for it with `git worktree remove`.
 3. Commit (`board: T<n> -> <status> (<handle>)`) and push. If the push is rejected, pull, re-apply your lines and push again. Never force-push.
 4. Tell the user in at most 4 lines: what was done, the status, the branch, and what should happen next (for example `/role qa T3`).
 

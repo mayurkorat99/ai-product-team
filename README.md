@@ -109,6 +109,7 @@ max_parallel: 3        # agents running at once
 board: file            # file | github-issues
 qa_max_rounds: 3       # QA/dev rounds per task before escalating to you
 base_branch: auto      # branch the run starts from; auto = current branch
+keep_task_branches: false  # true keeps task and QA branches after they are merged
 ```
 
 ## Working in parallel
@@ -124,6 +125,7 @@ Session C:  /role dev next
 Sessions coordinate through git:
 - **Claims.** Taking a task commits the claim to the board and pushes it. If two sessions claim the same task, the second push is rejected, so that session pulls and picks another task.
 - **Branches.** Each task has its own branch, `team/<slug>/T<n>-<name>`, and QA's tests live on `team/<slug>/T<n>-qa`. `tech-lead` reviews both and merges them into the run branch.
+- **Cleanup.** Once a task is merged, `tech-lead` deletes its task and QA branches and the coordinator removes its worktree, so a finished run leaves only `team/<slug>/main`. Merges use `--no-ff`, so each task's history stays in the run branch. Set `keep_task_branches: true` to keep them.
 - **Test-first QA.** QA writes acceptance tests from the spec before the code exists, and runs them when a task reaches `review`.
 - **GitHub Issues.** Set `board: github-issues` to use issues as the board (labels `role:` and `status:`, comments for handoffs). This needs GitHub tools in the session; otherwise the file board is used.
 

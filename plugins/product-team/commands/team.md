@@ -21,6 +21,7 @@ Request: $ARGUMENTS
      board: file            # file | github-issues
      qa_max_rounds: 3       # QA/dev rounds per task before escalating
      base_branch: auto      # branch the run starts from; auto = current branch
+     keep_task_branches: false  # true keeps task and QA branches after they are merged
      ```
    - `.team/board.md`: a table `| ID | Task | Role | Depends on | Status | Branch | Claimed by | Updated |`.
    - `.team/log.md`, `.team/questions.md`, `.team/bugs.md`, `.team/memory/team.md`, each with a one-line heading.
@@ -64,11 +65,12 @@ Request: $ARGUMENTS
 2. For each, create its task branch `team/<slug>/T<n>-<short-name>` from the run branch and start the task's role (`dev`, `mobile` or `devops`) on it. While the first build tasks run, also start `qa` for the test plan and its acceptance tests on `team/<slug>/T<n>-qa` branches.
 3. When a role reports the task is ready, set it to `review` and start `qa` to test it.
 4. If QA files S1/S2 bugs, set the task to `changes-requested` and start the task's role to fix them, then QA again. After `qa_max_rounds` rounds, set the task to `blocked` and ask the user.
-5. When QA passes, start `tech-lead` to review. `CHANGES REQUESTED` goes back to the role (step 4 rules). `APPROVED`: tech-lead merges the task branch and its QA branch into the run branch. Set the task to `done`.
+5. When QA passes, start `tech-lead` to review. `CHANGES REQUESTED` goes back to the role (step 4 rules). `APPROVED`: tech-lead merges the task branch and its QA branch into the run branch and deletes them. Set the task to `done`, clear its `Branch` cell on the board, and remove any worktree used for the task (`git worktree remove <path>`, then `git branch -d` its worktree branch if it has one; `-d` refuses unmerged work, so stop and ask if it does).
 6. Answer open questions addressed to roles before they block a task.
 
 **S6 - Verify and prepare.** On the run branch:
 1. Run the project's full test suite yourself and record the command and the result in `state.md`.
+   Then sweep leftovers: `git worktree prune`, and delete any `team/<slug>/T<n>-*` branch whose task is `done` and that `git branch --merged` lists (local with `git branch -d`, remote with `git push origin --delete`). Skip this if `keep_task_branches: true`. Report anything that couldn't be deleted instead of forcing it.
 2. Run in parallel: `security` (code review of the whole run's diff against the base branch), `devops` (finish `release.md` and confirm CI passes) and `growth` (`gtm.md`, based on what was actually built).
 3. Fix loop: Critical/High security findings and S1/S2 bugs become tasks and go back through S5.
 

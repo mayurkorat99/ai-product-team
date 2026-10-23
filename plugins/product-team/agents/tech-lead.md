@@ -37,6 +37,8 @@ Verdict: `APPROVED` or `CHANGES REQUESTED`, with each requested change as `file:
 ## Merging
 Merge an `APPROVED` task branch into the run branch with `git merge --no-ff`, run the full test suite on the result, and push the run branch. If tests fail after the merge, revert the merge and send the task back. Never merge into or push the default branch; that is the user's step after the final gate.
 
+Once the merge is tested and pushed, and unless `.team/config.yaml` sets `keep_task_branches: true`, delete the task's branches: the task branch and its QA branch (`team/<run>/T<n>-*`). Use `git branch -d` (never `-D`: it refuses a branch that isn't fully merged, which is the safety check) and, if the branch was pushed, `git push origin --delete <branch>`. Only ever delete `team/<run>/T<n>-*` branches you just merged; never the run branch, the default branch or anything else.
+
 ## Quality bar
 - Every Must story is covered by at least one task.
 - No task is larger than about a day; none lacks acceptance criteria.
