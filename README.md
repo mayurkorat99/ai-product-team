@@ -1,6 +1,6 @@
 # AI Product Team
 
-A senior product team as [Claude Code](https://claude.com/claude-code) agents. Give it an idea; a founder, product manager, business analyst, designers, tech lead, developers, QA, DevOps, security, data and growth roles take it to working, tested code and a launch plan. You approve the three decisions that matter, and the team improves through lessons you approve.
+A senior product team as [Claude Code](https://claude.com/claude-code) agents. Give it an idea; a founder, product manager, business analyst, designers, tech lead, developers, QA, DevOps, security, data and growth roles take it to working, tested code and a launch plan. Each run is sized to the work, you see where it is after every step, you approve the decisions that matter, and the team improves through lessons you approve.
 
 It's a Claude Code plugin, so it works in any project: every role reads the project's own stack and conventions before it does anything.
 
@@ -39,7 +39,7 @@ Every command also has a namespaced form: `/product-team:team`, `/product-team:r
 /team a habit tracker where friends can see each other's streaks
 ```
 
-The team writes everything into a `.team/` folder in your project and works on its own branch, `team/<slug>/main`. It stops three times for you:
+First the team proposes a **run size** and waits for you to confirm it (see [Run sizes](#run-sizes)). It then writes everything into a `.team/` folder in your project and works on its own branch, `team/<slug>/main`. It stops for you at these gates:
 
 | Gate | You approve |
 |---|---|
@@ -47,13 +47,52 @@ The team writes everything into a `.team/` folder in your project and works on i
 | 2 | The **plan**: architecture decisions, tasks, risks, security requirements |
 | 3 | **Go / no-go**: what was built, test results, open bugs and security findings |
 
-Nothing is ever deployed, published or merged into your default branch. At gate 3 you get the branch to merge.
+Small runs combine gates 1 and 2 into one. Nothing is ever deployed, published or merged into your default branch. At the go/no-go gate you get the branch to merge.
+
+After every step you see a short status block:
+```text
+[Medium] Stage 2/7 - Specify and design
+Done:    ux - 6 screens, all states covered
+Running: ba (spec.md)
+Next:    ui + security design review
+Tasks:   0/0 done, 0 in review, 0 blocked | Bugs S1/S2: 0 | Blocking questions: 1
+```
+
+## Run sizes
+
+| Size | For | Roles | Gates |
+|---|---|---|---|
+| **Small** | A feature on an existing product, no new screens or flows | `pm`, `tech-lead`, `dev`/`mobile`, `qa`, `founder` for go/no-go | 2 |
+| **Medium** | A larger feature, or one with new screens or flows | Small + `ba`, `security`, and `ux` + `ui` when there is a UI | 3 |
+| **Full** | A new product, or a change that needs positioning, metrics and a launch | All 13 roles | 3 |
+
+- `security` joins any size when the work touches authentication, payments or personal data, either at the start or when `tech-lead` marks a task `sensitive`.
+- At confirmation you can add or remove individual roles. At gates 1 and 2 you can raise the size; the added roles catch up and the plan is revised. The size is never lowered.
+- Each document has a length target for its prose: Small 400 words, Medium 800, Full 1500.
+
+## Model per role
+
+Each role runs on the Claude model its work needs, so judgement-heavy work gets the strongest model and the rest saves tokens:
+
+| Model | Roles |
+|---|---|
+| Opus | `tech-lead`, `security` |
+| Sonnet | `founder`, `pm`, `ba`, `ux`, `ui`, `data`, `growth`, `qa` |
+| Per task | `dev`, `mobile`, `devops`: Opus when `tech-lead` marks the task `complex: yes` in the plan (concurrency, migrations, large refactors, performance-critical work), Sonnet otherwise |
+
+Override any role per project in `.team/config.yaml` (`opus` or `sonnet`):
+```yaml
+models:
+  dev: opus      # all code on Opus
+  ba: opus
+```
+The start line names each role's model, and every gate shows tokens used per role and per model; go/no-go adds the run total and the share spent on Opus. Totals cover the roles, not your own session, which stays on the model you chose.
 
 ## Commands
 
 | Command | What it does |
 |---|---|
-| `/team <idea>` | Run the whole team, idea to go/no-go. `/team status` reports progress; `/team resume` continues an interrupted run. |
+| `/team <idea>` | Run the team, idea to go/no-go, sized to the work. `/team status` prints the status block; `/team resume` continues an interrupted run. |
 | `/role <role> <task>` | Run one role on one task: free text, a board id (`T3`) or `next`. This is how you run roles in parallel sessions. |
 | `/retro` | Review recent work and propose lessons for each role. |
 | `/lessons` | Approve, edit or reject the proposed lessons. |
@@ -80,10 +119,16 @@ Nothing is ever deployed, published or merged into your default branch. At gate 
 
 ### How they talk
 
+A Full run:
 ```
-founder -> pm -> [GATE 1] -> ba + ux + data -> ui -> security (design) -> tech-lead -> [GATE 2]
+founder -> pm -> [GATE 1] -> ba + ux + data -> ui + security (design) -> tech-lead -> [GATE 2]
   -> dev/mobile <-> qa (up to 3 rounds per task) -> tech-lead review + merge
   -> security (code) + devops + growth -> founder -> [GATE 3] -> retro
+```
+A Small run:
+```
+pm -> [security (design), if sensitive] -> tech-lead -> [GATE 1+2]
+  -> dev/mobile <-> qa -> tech-lead review + merge -> [security (code)] -> founder -> [GATE 3] -> retro
 ```
 
 Every handoff is a file, so you can read, edit or challenge any of it. Roles ask each other questions in `.team/questions.md` (`[qa -> ba] Is a zero-amount order valid?`) and never silently rewrite each other's work.
@@ -96,6 +141,7 @@ Every handoff is a file, so you can read, edit or challenge any of it. Roles ask
 | `board.md` | Tasks and their status: `todo -> claimed:<role> -> review -> done` (also `changes-requested`, `blocked`) |
 | `questions.md`, `bugs.md`, `review.md`, `decisions.md`, `log.md` | Conversation and history |
 | `state.md` | Where the run is; used by `/team resume` and other sessions |
+| `tokens.md` | Token use per role start (append-only); summed at every gate |
 | `config.yaml` | Settings (below) |
 | `names.yaml` | Optional persona names |
 | `memory/<role>.md`, `memory/team.md` | Approved lessons for this project |
@@ -110,6 +156,8 @@ board: file            # file | github-issues
 qa_max_rounds: 3       # QA/dev rounds per task before escalating to you
 base_branch: auto      # branch the run starts from; auto = current branch
 keep_task_branches: false  # true keeps task and QA branches after they are merged
+# models:              # override a role's model: opus | sonnet
+#   dev: opus
 ```
 
 ## Working in parallel

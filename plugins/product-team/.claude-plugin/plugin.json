@@ -1,6 +1,6 @@
 {
   "name": "product-team",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "description": "A senior product team as Claude Code agents. Each role owns one deliverable, hands off through .team/, and improves through lessons you approve.",
   "author": { "name": "mayurkorat99" },
   "repository": "https://github.com/mayurkorat99/ai-product-team",

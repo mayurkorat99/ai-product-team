@@ -8,7 +8,7 @@
     {
       "name": "product-team",
       "source": "./plugins/product-team",
-      "description": "13 senior role agents plus /team, /role, /retro and /lessons. Three approval gates, parallel work across sessions, lessons you approve."
+      "description": "13 senior role agents plus /team, /role, /retro and /lessons. Run sizes with two or three approval gates, live progress, parallel work across sessions, lessons you approve."
     }
   ]
 }
