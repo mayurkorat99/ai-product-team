@@ -12,6 +12,7 @@ Request: $ARGUMENTS
 - If it matches neither, list the handles (and names, if any) and stop.
 - If `names.yaml` has an unknown handle or a duplicate name, report it in one line and ignore that entry; never stop for it.
 - The rest of the request is the task: free text, a board id such as `T3`, or `next` (the first `todo` task for this role whose dependencies are `done`).
+- If `.team/state.md` records a run size and role list and this role isn't in it, say so and ask whether to add it to the run. On yes, add it to the role list in `state.md` (committed in step 3 or 5). On no, stop.
 
 ## 2. Sync
 If `.team/state.md` exists, read the run branch from it. Then, if this is a git repository with a remote:
@@ -26,7 +27,7 @@ If `.team/state.md` exists, read the run branch from it. Then, if this is a git 
 
 ## 4. Run the role
 - Create or check out the task branch (`team/<run>/T<n>-<short-name>` from the run branch; QA uses `team/<run>/T<n>-qa`).
-- Start the role with the Agent tool, agent type `product-team:<handle>` (or the bare `<handle>` if that's what your agent list shows). Give it: the task (with its acceptance ids from `plan.md`), the branch it's on, the files to read first, and its name if `names.yaml` has one. Tell it that it's on a task branch, so it must not edit coordination files.
+- Start the role with the Agent tool, agent type `product-team:<handle>` (or the bare `<handle>` if that's what your agent list shows). Give it: the task (with its acceptance ids from `plan.md`), the branch it's on, the files to read first, its name if `names.yaml` has one, the run size, and for document roles the length target for that size (the table in the `/team` command: Small 400, Medium 800, Full 1500 words of narrative prose). Tell it that it's on a task branch, so it must not edit coordination files.
 - Free-text tasks without a board id run the same way, without the claim.
 
 ## 5. Record and share
@@ -38,6 +39,6 @@ After the role returns:
    - set the board status: `review` when a build task is ready, `done` only when `tech-lead` approved and merged it, and `blocked` with the reason otherwise.
    - when a task becomes `done`, clear its `Branch` cell; tech-lead has already deleted the task and QA branches (unless `keep_task_branches: true`). Remove any worktree you created for it with `git worktree remove`.
 3. Commit (`board: T<n> -> <status> (<handle>)`) and push. If the push is rejected, pull, re-apply your lines and push again. Never force-push.
-4. Tell the user in at most 4 lines: what was done, the status, the branch, and what should happen next (for example `/role qa T3`).
+4. Tell the user in at most 4 lines: what was done, the status, the branch, and what should happen next (for example `/role qa T3`). Then one progress line for the run, from the board: `Tasks: <done>/<total> done, <n> in review, <n> blocked`.
 
 The roles' Team protocol applies to you as well, including its safety rule.
