@@ -12,7 +12,7 @@ Request: $ARGUMENTS
 - If it matches neither, list the handles (and names, if any) and stop.
 - If `names.yaml` has an unknown handle or a duplicate name, report it in one line and ignore that entry; never stop for it.
 - The rest of the request is the task: free text, a board id such as `T3`, or `next` (the first `todo` task for this role whose dependencies are `done`).
-- If `.team/state.md` records a run size and role list and this role isn't in it, say so and ask whether to add it to the run. On yes, add it to the role list in `state.md` (committed in step 3 or 5). On no, stop.
+- If `.team/state.md` records a run size and role list and this role isn't in it, say so and ask whether to add it to the run. On yes, remember it and add it to the role list in `state.md` after the sync in step 2, committing it with the claim (step 3) or the record (step 5). On no, stop.
 
 ## 2. Sync
 If `.team/state.md` exists, read the run branch from it. Then, if this is a git repository with a remote:
@@ -32,7 +32,8 @@ If `.team/state.md` exists, read the run branch from it. Then, if this is a git 
 
 ## 5. Record and share
 After the role returns:
-1. Push the task branch, if it changed code.
+0. If its report says `Blocked: needs user - <question>`, ask the user, then start the role again with the answer before continuing.
+1. Push the task branch, if it changed code, and if there is a remote.
 2. Switch back to the run branch and `git pull --rebase`. Then:
    - append the role's log line to `log.md`, its questions to `questions.md` and its bugs to `bugs.md`;
    - append its `Proposed lesson`, unless `none`, to `.team/lessons-pending.md` as `- [pending] <handle> | <scope> | <rule> | <task id or "adhoc">`;

@@ -21,8 +21,9 @@ Request: $ARGUMENTS
 | **Medium** | A larger feature, or one with new screens or flows | Small plus `ba`, `security`, and `ux` and `ui` when there is a user interface | 7: S2-S8 | 3 |
 | **Full** | A new product, or a change that needs positioning, metrics and a launch | All 13 roles | 8: S1-S8 | 3 |
 
-- **Sensitive work.** Whatever the size, add `security` when the work touches authentication, payments or personal data.
-- **Length targets** for narrative prose in each document (tables, diagrams, IDs and test scenarios don't count): Small 400 words, Medium 800, Full 1500. Pass the target in every document role's prompt.
+- **Core roles.** `pm`, `tech-lead`, `qa`, the build role (`dev` or `mobile`) and `founder` can't be removed from any size.
+- **Sensitive work.** Whatever the size, add `security` when the work touches authentication, payments or personal data: sign-in, sessions, tokens, passwords, roles and permissions, payment SDKs or card data, or stored names, emails, addresses, phone numbers or other personal fields.
+- **Length targets** for narrative prose in each document (tables, diagrams, IDs and test scenarios don't count): Small 400 words, Medium 800, Full 1500. Pass the target to every document role: `founder`, `pm`, `ba`, `ux`, `ui`, `data`, `tech-lead`, `security`, `devops` (`release.md`), `qa` (`test-plan.md`) and `growth`.
 - **Stage numbers** in the status block count only the run's own stages: in a Medium run, S2 is stage 1/7.
 
 ## 2. Set up the run (new idea)
@@ -57,26 +58,29 @@ Running: <roles still working, with their files>
 Next:    <what starts when they finish, or the next gate>
 Tasks:   <done>/<total> done, <n> in review, <n> blocked | Bugs S1/S2: <n> | Blocking questions: <n>
 ```
-Leave out `Running` when nothing is running. Mention in the block when `security` was added and why.
+Leave out `Running` when nothing is running, and `Tasks` until the board has tasks. Mention in the block when `security` was added and why. For `status` with no `.team/state.md`, say there is no run and stop.
 
 ## 4. How to start a role
 - Use the Agent tool with agent type `product-team:<handle>` (if your agent list shows a bare `<handle>`, use that).
 - In the prompt, give: the handle and name, the stage, the run size, the length target (document roles), the task id if any, the branch to work on, the files to read first, and what to produce. Tell code-writing roles (`dev`, `mobile`, `qa`, `devops`) their task branch, and that they are on a task branch so they must not edit coordination files.
 - Only start roles in the run's role list.
-- **Parallel roles run in the background.** Start independent roles with `run_in_background: true`, never more than `max_parallel` at once, and print the start line. Each completion arrives on its own; handle it right away (the steps below) while the others keep working. Give code-writing roles running in parallel `isolation: "worktree"`. A single role may run in the foreground.
+- **Parallel roles run in the background.** Commit `.team/` first. Start independent roles with `run_in_background: true`, never more than `max_parallel` at once, record the set of running roles in `state.md`, print the start line, then **end your turn and wait**; never poll. Each completion notification is your trigger: run the after-return steps below, print the status block, and start any role whose inputs are now complete. Don't start the next stage or show a gate until every role in the current set has returned. A single role may run in the foreground.
+- **Parallel roles don't edit coordination files.** Tell every role started in parallel, like roles on a task branch, to put its log line, questions and bugs in its report instead of editing `log.md`, `questions.md` or `bugs.md`.
+- **Worktrees.** Give code-writing roles running in parallel `isolation: "worktree"`, and tell them to create or switch to their task branch inside the worktree (`git switch -c <branch>` or `git switch <branch>`), never in your checkout, and to report the branch name.
 - After each role returns:
+  - if its report says `Blocked: needs user - <question>`, ask the user now, then start the role again with the answer;
   - append its log line to `log.md`;
   - copy its questions into `questions.md` and its bugs into `bugs.md`;
   - append its `Proposed lesson` (unless `none`) to `.team/lessons-pending.md` as `- [pending] <handle> | <scope> | <rule> | run <slug>`;
   - update the board and `state.md`;
-  - commit the `.team/` changes on the run branch;
+  - commit only the files this role delivered plus your coordination changes (`git add <files>`, never `git add .team/`), so another role's half-written file is never committed;
   - print the status block.
 - **Open questions:** route each one to the role it is addressed to before starting work that depends on it. Questions to the user: ask at the next gate, or immediately if blocking.
 
 ## 5. Stages
 Skip any stage or role that isn't in the run's size (section 1).
 
-**S1 - Brief** (Full only). `founder` writes `brief.md` from `idea.md`. If the founder needs answers only the user has, ask now and wait.
+**S1 - Brief** (Full only). `founder` writes `brief.md` from `idea.md`. If the founder reports it is blocked on answers only the user has, ask now and wait.
 
 **S2 - Requirements.** `pm` writes `prd.md`. Without a brief, `pm` opens the PRD with a short Problem section.
 
@@ -87,15 +91,16 @@ Skip any stage or role that isn't in the run's size (section 1).
 **S4 - Plan.**
 1. If `security` is in the run and its design review didn't run in S3 (Small runs, or no `ui`), start it now, before `tech-lead`.
 2. `tech-lead` writes `architecture.md` and `plan.md`. The plan includes the security requirements, the analytics tasks when `metrics.md` exists, and marks tasks touching authentication, payments or personal data as `sensitive`. Include `mobile` tasks only if the PRD includes a mobile app.
-3. If any task is `sensitive` and `security` isn't in the run, add it, say so in the status block, run its design review, and have `tech-lead` add its SEC requirements to the plan.
-4. Copy the plan's tasks onto the board with status `todo`.
+3. If any task is `sensitive` and `security` isn't in the run, add it, say so in the status block and at the next gate, run its design review, and have `tech-lead` add its SEC requirements to the plan.
+4. If any task is assigned to a role outside the run (for example a CI task for `devops` in a Small run), have `tech-lead` reassign it to a role in the run, or ask at the gate whether to add that role.
+5. Copy the plan's tasks onto the board with status `todo`.
 
-> **GATE 2 - approve the plan** (Small: the combined PRD and plan gate). Show: the key architecture decisions (ADR titles), the task list with roles and dependencies, the top risks, and the security requirements; in Small, also the PRD summary from Gate 1. Ask: approve, change, or raise the size. **Stop and wait.** Changes go back to `tech-lead` (or `pm`, or `security`), then show the gate again.
+> **GATE 2 - approve the plan** (Small: the combined PRD and plan gate). Show: the key architecture decisions (ADR titles), the task list with roles and dependencies, the top risks, and the security requirements; in Small, also a PRD summary you write from `prd.md` (target user, MVP stories, out of scope, success metrics). Ask: approve, change, or raise the size. **Stop and wait.** Changes go back to `tech-lead` (or `pm`, or `security`), then show the gate again.
 
-**Raising the size** (Gates 1 and 2 only; never at go/no-go, and never lower it). Update the size, role list and stage total in `state.md`. Run the newly added roles' missed stages (S1 for `founder`'s brief, S3 for `ba`, `ux`, `ui`, `data`, the security design review). If a plan already exists, have `tech-lead` revise it with their output. Then show the gate again.
+**Raising the size** (Gates 1 and 2 only; never at go/no-go, and never lower it). Update the size, role list and stage total in `state.md`. Run the newly added roles' missed stages (S1 for `founder`'s brief, S3 for `ba`, `ux`, `ui`, `data`, the security design review). If a plan already exists, have `tech-lead` revise it with their output and replace the board's `todo` tasks with the revised plan's tasks. Then show the gate again; a Small run raised at its combined gate shows the combined gate again, PRD summary included.
 
 **S5 - Build.** Repeat until every task is `done`:
-1. Pick the `todo` tasks whose dependencies are all `done`, up to `max_parallel`. Set each to `claimed:<handle>` with `Claimed by: coordinator <time>`. With `board: file`, commit and push the run branch first: this claim is what other sessions see.
+1. Pick the `todo` tasks whose dependencies are all `done`, up to `max_parallel`. Set each to `claimed:<handle>` with `Claimed by: coordinator <time>`. With `board: file`, commit the run branch first, and push it if there is a remote: this claim is what other sessions see.
 2. For each, create its task branch `team/<slug>/T<n>-<short-name>` from the run branch and start the task's role (`dev`, `mobile` or `devops`) on it. While the first build tasks run, also start `qa` for the test plan and its acceptance tests on `team/<slug>/T<n>-qa` branches.
 3. When a role reports the task is ready, set it to `review` and start `qa` to test it.
 4. If QA files S1/S2 bugs, set the task to `changes-requested` and start the task's role to fix them, then QA again. After `qa_max_rounds` rounds, set the task to `blocked` and ask the user.
