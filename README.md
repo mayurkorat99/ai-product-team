@@ -70,6 +70,24 @@ Tasks:   0/0 done, 0 in review, 0 blocked | Bugs S1/S2: 0 | Blocking questions: 
 - At confirmation you can add or remove individual roles. At gates 1 and 2 you can raise the size; the added roles catch up and the plan is revised. The size is never lowered.
 - Each document has a length target for its prose: Small 400 words, Medium 800, Full 1500.
 
+## Model per role
+
+Each role runs on the Claude model its work needs, so judgement-heavy work gets the strongest model and the rest saves tokens:
+
+| Model | Roles |
+|---|---|
+| Opus | `tech-lead`, `security` |
+| Sonnet | `founder`, `pm`, `ba`, `ux`, `ui`, `data`, `growth`, `qa` |
+| Per task | `dev`, `mobile`, `devops`: Opus when `tech-lead` marks the task `complex: yes` in the plan (concurrency, migrations, large refactors, performance-critical work), Sonnet otherwise |
+
+Override any role per project in `.team/config.yaml` (`opus` or `sonnet`):
+```yaml
+models:
+  dev: opus      # all code on Opus
+  ba: opus
+```
+The start line names each role's model, and every gate shows tokens used per role and per model; go/no-go adds the run total and the share spent on Opus. Totals cover the roles, not your own session, which stays on the model you chose.
+
 ## Commands
 
 | Command | What it does |
@@ -137,6 +155,8 @@ board: file            # file | github-issues
 qa_max_rounds: 3       # QA/dev rounds per task before escalating to you
 base_branch: auto      # branch the run starts from; auto = current branch
 keep_task_branches: false  # true keeps task and QA branches after they are merged
+# models:              # override a role's model: opus | sonnet
+#   dev: opus
 ```
 
 ## Working in parallel
