@@ -33,7 +33,7 @@ Each role runs on the model its work needs. The defaults match each agent file's
 |---|---|
 | `opus` | `tech-lead`, `security` |
 | `sonnet` | `founder`, `pm`, `ba`, `ux`, `ui`, `data`, `growth`, `qa` |
-| per task | `dev`, `mobile`, `devops`: `opus` when the task's `complex` value in `.team/plan.md` is `yes`, otherwise `sonnet` (also `sonnet` for work outside a planned task) |
+| per task | `dev`, `mobile`, `devops`: `opus` when the task's `complex` value in `.team/plan.md` starts with `yes`, otherwise `sonnet` (a missing column or value counts as `no`; work outside a planned task is `sonnet`) |
 
 **Resolve a role's model** in this order: its `models:` override in `config.yaml`; else, for `dev`, `mobile` or `devops` on a task marked `complex: yes`, `opus`; else its default above. Fix rounds for a task (QA bugs, review changes) use the same model as the task. Allowed override values are `opus` and `sonnet`. This session itself stays on whatever model the user chose.
 
@@ -58,15 +58,16 @@ Each role runs on the model its work needs. The defaults match each agent file's
 5. **Git.**
    - If the project is a git repository, create the run branch `team/<slug>/main` from `base_branch` (a short kebab-case slug of the idea) and switch to it. All `.team/` changes are committed there. Never commit to or push the default branch.
    - If it is not a git repository, tell the user that parallel work across sessions is unavailable, and run everything sequentially in place.
-6. Write `.team/state.md` (run slug, run branch, size, role list, stage total, stage, step, gate results, date) and update it after every step below, so the run can be resumed. It also holds a `## Tokens` table, `| Role | Model | Task | Tokens |`, with one row **appended** per finished role start and never edited, so parallel sessions never conflict.
+6. Write `.team/state.md` (run slug, run branch, size, role list, stage total, stage, step, gate results, date) and update it after every step below, so the run can be resumed. Create `.team/tokens.md` with a table `| Role | Model | Task | Tokens |`. Rows are only ever **appended**, one per finished role start, and never edited or rewritten; if a rebase conflicts in this file, keep both sides' rows.
 
 ## 3. Show progress
 **Start line.** When roles start, print one line naming each role, what it is producing and its model, for example `Started: ba (spec.md, sonnet), tech-lead (plan.md, opus), dev (T2, opus)`.
 
-**Token report.** At every gate, and in `status`, sum the `## Tokens` rows in `state.md` per role and per model, for example:
+**Token report.** At every gate, and in `status`, sum the rows in `.team/tokens.md` per role and per model, for example:
 ```text
-Tokens so far: tech-lead 182k (opus), ba 64k, pm 41k, ux 38k (sonnet) | opus 182k, sonnet 143k
+Tokens so far: tech-lead 182k (opus), dev 120k (opus 80k, sonnet 40k), ba 64k, pm 41k (sonnet) | opus 262k, sonnet 145k
 ```
+A role that used both models shows the split, as `dev` does above.
 Show a role or model with unreported usage as its known sum plus `(+n unknown)`. At go/no-go, also show the run total and the share on Opus as a percentage of known tokens, and say that the totals cover the roles, not this coordinator session.
 
 **Status block.** After every role finishes, at every gate, and whenever a task changes status, print this block (about 8 lines; detail stays in `.team/`):
@@ -83,12 +84,12 @@ Leave out `Running` when nothing is running, and `Tasks` until the board has tas
 - Use the Agent tool with agent type `product-team:<handle>` (if your agent list shows a bare `<handle>`, use that), and always pass the role's resolved model (section 1, *Models*) as the Agent call's `model`, so overrides beat the agent file's default.
 - In the prompt, give: the handle and name, the stage, the run size, the length target (document roles), the task id if any, the branch to work on, the files to read first, and what to produce. Tell code-writing roles (`dev`, `mobile`, `qa`, `devops`) their task branch, and that they are on a task branch so they must not edit coordination files.
 - Only start roles in the run's role list.
-- **Every role runs in the background**, a single role too, because background completions report token usage. Commit `.team/` first. Start roles with `run_in_background: true`, never more than `max_parallel` at once, record the set of running roles in `state.md`, print the start line, then **end your turn and wait**; never poll. Each completion notification is your trigger: run the after-return steps below, print the status block, and start any role whose inputs are now complete. Don't start the next stage or show a gate until every role in the current set has returned.
+- **Every role runs in the background**, a single role too, because background completions report token usage. Commit your coordination changes first: only coordination files and deliverables of roles that have returned, never `git add .team/`, since other roles may still be writing. Start roles with `run_in_background: true`, never more than `max_parallel` at once, record the set of running roles in `state.md`, print the start line, then **end your turn and wait**; never poll. Each completion notification is your trigger: run the after-return steps below, print the status block, and start any role whose inputs are now complete. Don't start the next stage or show a gate until every role in the current set has returned.
 - **Parallel roles don't edit coordination files.** Tell every role started in parallel, like roles on a task branch, to put its log line, questions and bugs in its report instead of editing `log.md`, `questions.md` or `bugs.md`.
 - **Worktrees.** Give code-writing roles running in parallel `isolation: "worktree"`, and tell them to create or switch to their task branch inside the worktree (`git switch -c <branch>` or `git switch <branch>`), never in your checkout, and to report the branch name.
 - After each role returns:
-  - if its report says `Blocked: needs user - <question>`, ask the user now, then start the role again with the answer;
-  - append a row to the `## Tokens` table in `state.md`: role, model, task id (or `-`), and the total tokens from the completion's usage report, or `unknown` if it has none;
+  - first, append a row to `.team/tokens.md`: role, model, task id (or `-`), and the total tokens from the completion's usage report, or `unknown` if it has none (blocked runs count too);
+  - if its report says `Blocked: needs user - <question>`, ask the user now, then start the role again with the answer before continuing;
   - append its log line to `log.md`;
   - copy its questions into `questions.md` and its bugs into `bugs.md`;
   - append its `Proposed lesson` (unless `none`) to `.team/lessons-pending.md` as `- [pending] <handle> | <scope> | <rule> | run <slug>`;

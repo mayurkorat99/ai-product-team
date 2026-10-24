@@ -141,6 +141,7 @@ Every handoff is a file, so you can read, edit or challenge any of it. Roles ask
 | `board.md` | Tasks and their status: `todo -> claimed:<role> -> review -> done` (also `changes-requested`, `blocked`) |
 | `questions.md`, `bugs.md`, `review.md`, `decisions.md`, `log.md` | Conversation and history |
 | `state.md` | Where the run is; used by `/team resume` and other sessions |
+| `tokens.md` | Token use per role start (append-only); summed at every gate |
 | `config.yaml` | Settings (below) |
 | `names.yaml` | Optional persona names |
 | `memory/<role>.md`, `memory/team.md` | Approved lessons for this project |

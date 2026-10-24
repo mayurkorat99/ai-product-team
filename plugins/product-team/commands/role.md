@@ -27,17 +27,16 @@ If `.team/state.md` exists, read the run branch from it. Then, if this is a git 
 
 ## 4. Run the role
 - Create or check out the task branch (`team/<run>/T<n>-<short-name>` from the run branch; QA uses `team/<run>/T<n>-qa`).
-- Start the role with the Agent tool, agent type `product-team:<handle>` (or the bare `<handle>` if that's what your agent list shows). Give it: the task (with its acceptance ids from `plan.md`), the branch it's on, the files to read first, its name if `names.yaml` has one, the run size, and for document roles the length target for that size (the table in the `/team` command: Small 400, Medium 800, Full 1500 words of narrative prose). Tell it that it's on a task branch, so it must not edit coordination files.
-- **Model.** Resolve it with the rule in the `/team` command (section 1, *Models*): the role's `models:` override in `.team/config.yaml` (`opus` or `sonnet`; report anything else once and ignore it); else, for `dev`, `mobile` or `devops`, `opus` if the task's `complex` value in `.team/plan.md` is `yes` (`no` for free-text work); else the role's default (`opus` for `tech-lead` and `security`, `sonnet` for the rest). Pass it as the Agent call's `model`, and say which model is running.
-- Start the role with `run_in_background: true`, then end your turn and wait for its completion notification; run section 5 when it arrives.
+- Start the role once, with the Agent tool: agent type `product-team:<handle>` (or the bare `<handle>` if that's what your agent list shows), `model` set to the resolved model (below), and `run_in_background: true`. Then end your turn and wait for its completion notification; run section 5 when it arrives. In the prompt, give it: the task (with its acceptance ids from `plan.md`), the branch it's on, the files to read first, its name if `names.yaml` has one, the run size, and for document roles the length target for that size (the table in the `/team` command: Small 400, Medium 800, Full 1500 words of narrative prose). Tell it that it's on a task branch, so it must not edit coordination files.
+- **Model.** Resolve it with the rule in the `/team` command (section 1, *Models*): the role's `models:` override in `.team/config.yaml` (`opus` or `sonnet`; report anything else once and ignore it); else, for `dev`, `mobile` or `devops`, `opus` if the task's `complex` value in `.team/plan.md` starts with `yes` (a missing column or value, and free-text work, count as `no`); else the role's default (`opus` for `tech-lead` and `security`, `sonnet` for the rest). Say which model is running.
 - Free-text tasks without a board id run the same way, without the claim.
 
 ## 5. Record and share
 After the role returns:
-0. If its report says `Blocked: needs user - <question>`, ask the user, then start the role again with the answer before continuing.
+0. Note its token usage (from the completion's usage report, or `unknown`). If its report says `Blocked: needs user - <question>`, ask the user, then start the role again with the answer before continuing.
 1. Push the task branch, if it changed code, and if there is a remote.
 2. Switch back to the run branch and `git pull --rebase`. Then:
-   - append a row to the `## Tokens` table in `state.md` (role, model, task id or `-`, total tokens from the completion's usage report or `unknown`); only ever append, never edit existing rows;
+   - append one row per completion noted in step 0 (including blocked runs) to `.team/tokens.md` (role, model, task id or `-`, tokens or `unknown`); only ever append, never edit rows, and on a rebase conflict keep both sides' rows. With no run (`.team/state.md` absent), skip this and report the tokens to the user instead;
    - append the role's log line to `log.md`, its questions to `questions.md` and its bugs to `bugs.md`;
    - append its `Proposed lesson`, unless `none`, to `.team/lessons-pending.md` as `- [pending] <handle> | <scope> | <rule> | <task id or "adhoc">`;
    - set the board status: `review` when a build task is ready, `done` only when `tech-lead` approved and merged it, and `blocked` with the reason otherwise.
